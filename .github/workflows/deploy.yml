@@ -1,0 +1,54 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [release]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Package source
+        run: |
+          tar czf /tmp/source.tar.gz \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='web/dist' \
+            --exclude='data' \
+            --exclude='logs' \
+            .
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          script: |
+            mkdir -p /data/service/ai-conding-github
+        envs: DEPLOY_HOST,DEPLOY_USER
+
+      - name: Upload source to server
+        run: |
+          eval $(ssh-agent -s)
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" | ssh-add -
+          scp -o StrictHostKeyChecking=no /tmp/source.tar.gz ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/data/service/ai-conding-github/source.tar.gz
+
+      - name: Extract and build
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /data/service/ai-conding-github
+            tar xzf source.tar.gz
+            rm -f source.tar.gz
+            find . -name '._*' -delete 2>/dev/null || true
+            bash scripts/deploy.sh
