@@ -1,0 +1,22 @@
+#!/bin/sh
+# Git pre-commit hook - 自动版本号管理
+MARKER_FILE=".husky_pre_commit_marker"
+if [ -f "$MARKER_FILE" ]; then
+  echo "Pre-commit already run, skipping..."
+  rm "$MARKER_FILE"
+  exit 0
+fi
+echo "Pre-commit running..."
+touch "$MARKER_FILE"
+COMMIT_MSG=$(git log -1 --pretty=%B 2>/dev/null || echo "")
+if echo "$COMMIT_MSG" | grep -q "release major"; then
+  npm version major --no-git-tag-version
+elif echo "$COMMIT_MSG" | grep -q "release minor"; then
+  npm version minor --no-git-tag-version
+else
+  npm version patch --no-git-tag-version
+fi
+git add package.json package-lock.json 2>/dev/null
+rm -f "$MARKER_FILE"
+echo "Pre-commit hook completed."
+exit 0

@@ -15,6 +15,8 @@ cd "$PROJECT_DIR"
 
 if [ -n "${IMAGE_TAG:-}" ]; then
     VERSION="${IMAGE_TAG}"
+elif [ -f package.json ] && command -v node >/dev/null 2>&1; then
+    VERSION="v$(node -p "require('./package.json').version")"
 elif [ -f VERSION ]; then
     VERSION=$(tr -d '[:space:]' < VERSION)
 else
