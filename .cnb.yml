@@ -1,0 +1,58 @@
+# MR 合并到 main 后：构建镜像 → 推送制品库 → SSH 触发生产部署
+
+.build_and_deploy: &build_and_deploy
+  services:
+    - docker
+  stages:
+    - name: read version
+      script: |
+        export VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]')
+        if [ -z "$VERSION" ]; then export VERSION="latest"; fi
+        echo "Building version: ${VERSION}"
+        echo "Image: ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${VERSION}"
+    - name: docker build
+      script: |
+        export VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]')
+        if [ -z "$VERSION" ]; then export VERSION="latest"; fi
+        docker build \
+          -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest \
+          -t ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${VERSION} .
+    - name: docker push
+      script: |
+        export VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]')
+        if [ -z "$VERSION" ]; then export VERSION="latest"; fi
+        docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:latest
+        docker push ${CNB_DOCKER_REGISTRY}/${CNB_REPO_SLUG_LOWERCASE}:${VERSION}
+    - name: deploy production
+      script: |
+        set -euo pipefail
+        export VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]')
+        if [ -z "$VERSION" ]; then export VERSION="latest"; fi
+
+        if [ -z "${DEPLOY_HOST:-}" ] || [ -z "${DEPLOY_SSH_KEY:-}" ]; then
+          echo "=========================================="
+          echo "镜像已推送，未配置远程部署密钥，跳过自动发布。"
+          echo "请在生产服务器执行："
+          echo "  cd ${DEPLOY_PATH:-/data/service/ai-conding-github}"
+          echo "  git pull origin main"
+          echo "  IMAGE_TAG=${VERSION} bash scripts/deploy.sh"
+          echo "=========================================="
+          exit 0
+        fi
+
+        mkdir -p ~/.ssh
+        echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        DEPLOY_USER="${DEPLOY_USER:-root}"
+        DEPLOY_PATH="${DEPLOY_PATH:-/data/service/ai-conding-github}"
+
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "${DEPLOY_USER}@${DEPLOY_HOST}" \
+          "set -euo pipefail
+           cd '${DEPLOY_PATH}'
+           git pull origin main
+           export IMAGE_TAG='${VERSION}'
+           bash scripts/deploy.sh"
+
+main:
+  pull_request.merged:
+    - *build_and_deploy

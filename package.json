@@ -1,0 +1,15 @@
+{
+  "name": "ai-conding-github",
+  "private": true,
+  "scripts": {
+    "dev": "make dev-setup && bash -c 'trap \"kill 0\" INT TERM EXIT; go run main.go & bun run dev:web & wait'",
+    "dev:web": "bun run dev --cwd web",
+    "dev:api": "make dev-setup && go run main.go",
+    "dev:setup": "make dev-setup",
+    "deploy": "bash scripts/deploy.sh",
+    "stop": "docker compose -f docker-compose.prod.yml down",
+    "logs": "docker compose -f docker-compose.prod.yml logs -f",
+    "restart": "docker compose -f docker-compose.prod.yml restart",
+    "status": "docker compose -f docker-compose.prod.yml ps"
+  }
+}
