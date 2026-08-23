@@ -23,27 +23,33 @@ jobs:
             --exclude='logs' \
             .
 
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1
+      - name: Test SSH connection
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
           script: |
-            mkdir -p /data/service/ai-conding-github
+            echo "=== SSH connection OK ==="
+            hostname
+            whoami
 
       - name: Upload source to server
         run: |
           eval $(ssh-agent -s)
           echo "${{ secrets.DEPLOY_SSH_KEY }}" | ssh-add -
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p /data/service/ai-conding-github"
           scp -o StrictHostKeyChecking=no /tmp/source.tar.gz ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/data/service/ai-conding-github/source.tar.gz
 
       - name: Extract and build
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 30m
           script: |
             cd /data/service/ai-conding-github
             tar xzf source.tar.gz
