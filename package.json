@@ -1,6 +1,6 @@
 {
   "name": "ai-conding-github",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "scripts": {
     "dev": "make dev-setup && bash -c 'trap \"kill 0\" INT TERM EXIT; go run main.go & bun run dev:web & wait'",

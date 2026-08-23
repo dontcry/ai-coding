@@ -7,9 +7,10 @@ COPY ./web ./
 COPY ./VERSION /build/VERSION
 COPY ./package.json /build/package.json
 COPY ./UPSTREAM_VERSION /build/UPSTREAM_VERSION
+RUN grep '"version"' /build/package.json | head -1 | cut -d'"' -f4 > /tmp/app_version
 RUN DISABLE_ESLINT_PLUGIN='true' \
-    VITE_REACT_APP_VERSION="v$$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' /build/package.json | head -1)" \
-    VITE_UPSTREAM_VERSION="$$(tr -d '[:space:]' < /build/UPSTREAM_VERSION)" \
+    VITE_REACT_APP_VERSION="v$(cat /tmp/app_version)" \
+    VITE_UPSTREAM_VERSION="$(cat /build/UPSTREAM_VERSION | tr -d '[:space:]')" \
     bun run build
 
 FROM golang:1.26.1-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039 AS builder2
@@ -31,7 +32,8 @@ RUN go mod download
 
 COPY . .
 COPY --from=builder /build/web/dist ./web/dist
-RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=v$$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' package.json | head -1)'" -o new-api
+COPY --from=builder /tmp/app_version /tmp/app_version
+RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=v$(cat /tmp/app_version)'" -o new-api
 
 FROM debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a
 
