@@ -1,6 +1,6 @@
 services:
   ai-conding-github:
-    image: ${IMAGE_REGISTRY:-docker.cnb.cool/ocean-data/dontcry/ai-coding}:${IMAGE_TAG:-latest}
+    image: ai-conding-github:${IMAGE_TAG:-latest}
     container_name: ai-conding-github
     restart: always
     ports:
