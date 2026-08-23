@@ -28,6 +28,20 @@ import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { cn } from '@/lib/utils'
 
+/** Read upstream new-api version from build-time env. */
+function getUpstreamVersion(): string | undefined {
+  try {
+    const env = (
+      import.meta as unknown as { env?: Record<string, string | undefined> }
+    ).env
+    const v = env?.VITE_UPSTREAM_VERSION
+    if (typeof v === 'string' && v.length > 0) return v
+  } catch {
+    // import.meta may be unavailable in some test environments.
+  }
+  return undefined
+}
+
 type SystemBrandProps = {
   defaultName?: string
   defaultVersion?: string
@@ -41,7 +55,7 @@ type SystemBrandProps = {
 
 /**
  * System brand component
- * Displays current system logo + name.
+ * Displays current system logo + name + version info.
  * - inline: compact pill in the top app bar; clicking navigates to home (/)
  * - sidebar: stacked card in the sidebar header (display only)
  */
@@ -54,6 +68,7 @@ export function SystemBrand(props: SystemBrandProps) {
   const name = status?.system_name || props.defaultName || 'New API'
   const version =
     status?.version || props.defaultVersion || t('Unknown version')
+  const upstreamVersion = getUpstreamVersion()
 
   if (variant === 'inline') {
     return (
@@ -73,6 +88,7 @@ export function SystemBrand(props: SystemBrandProps) {
           />
         </div>
         <span className='max-w-[12rem] truncate'>{name}</span>
+        <span className='text-muted-foreground text-xs'>{version}</span>
       </Link>
     )
   }
@@ -95,6 +111,11 @@ export function SystemBrand(props: SystemBrandProps) {
           <div className='grid flex-1 text-start text-sm leading-tight group-data-[collapsible=icon]:hidden'>
             <span className='truncate font-semibold'>{name}</span>
             <span className='truncate text-xs'>{version}</span>
+            {upstreamVersion && (
+              <span className='text-muted-foreground truncate text-[10px]'>
+                new-api {upstreamVersion}
+              </span>
+            )}
           </div>
         </SidebarMenuButton>
       </SidebarMenuItem>

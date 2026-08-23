@@ -1,5 +1,6 @@
 {
   "name": "ai-conding-github",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "dev": "make dev-setup && bash -c 'trap \"kill 0\" INT TERM EXIT; go run main.go & bun run dev:web & wait'",
@@ -10,6 +11,10 @@
     "stop": "docker compose -f docker-compose.prod.yml down",
     "logs": "docker compose -f docker-compose.prod.yml logs -f",
     "restart": "docker compose -f docker-compose.prod.yml restart",
-    "status": "docker compose -f docker-compose.prod.yml ps"
+    "status": "docker compose -f docker-compose.prod.yml ps",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }
