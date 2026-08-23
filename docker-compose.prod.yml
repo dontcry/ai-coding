@@ -10,3 +10,10 @@ services:
     volumes:
       - ./data:/data
       - ./logs:/app/logs
+    networks:
+      - default
+      - ai-coding_default
+
+networks:
+  ai-coding_default:
+    external: true
