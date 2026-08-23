@@ -32,7 +32,6 @@ jobs:
           script_stop: true
           script: |
             mkdir -p /data/service/ai-conding-github
-        envs: DEPLOY_HOST,DEPLOY_USER
 
       - name: Upload source to server
         run: |
